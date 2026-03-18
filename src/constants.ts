@@ -18,6 +18,12 @@ export const MESSAGE_ATTR = 'data-chatgpt-toc-id';
 
 export const TITLE_MAX_LENGTH = 32;
 export const ASSISTANT_TITLE_MAX_LENGTH = 40;
+export const HEADING_TITLE_MAX_LENGTH = 60;
+
+/**
+ * GPT 回复正文中用于提取目录的标题选择器。
+ */
+export const ASSISTANT_HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6';
 
 /**
  * MutationObserver 的刷新延迟。

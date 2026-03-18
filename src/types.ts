@@ -19,6 +19,11 @@ export interface ChatMessageNode {
 }
 
 /**
+ * 目录项类型。
+ */
+export type TocItemKind = 'user' | 'assistant' | 'heading';
+
+/**
  * 目录项定义。
  */
 export interface TocItem {
@@ -29,7 +34,7 @@ export interface TocItem {
 
     /**
      * 第几轮。
-     * 一级是用户轮次，二级是回复序号。
+     * 一级是用户轮次，二级是回复序号，三级是标题序号。
      */
     index: number;
 
@@ -47,6 +52,11 @@ export interface TocItem {
      * 角色类型。
      */
     role: 'user' | 'assistant';
+
+    /**
+     * 目录项类型。
+     */
+    kind: TocItemKind;
 
     /**
      * 父级 ID。

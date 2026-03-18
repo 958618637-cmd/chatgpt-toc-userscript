@@ -142,6 +142,11 @@ export class TocPanel {
     /**
      * 过滤目录项。
      *
+     * 说明：
+     * 1. 改成递归过滤，支持三级及更深层级目录。
+     * 2. 父节点命中时保留全部子节点。
+     * 3. 子节点命中时保留命中的祖先链。
+     *
      * @returns 过滤后的目录项
      */
     private getFilteredItems(): TocItem[] {
@@ -151,29 +156,32 @@ export class TocPanel {
             return this.items;
         }
 
+        const filterRecursively = (item: TocItem): TocItem | null => {
+            const selfMatched = item.title.toLowerCase().includes(keyword);
+            const children = item.children || [];
+            const matchedChildren = children
+                .map((child) => filterRecursively(child))
+                .filter((child): child is TocItem => !!child);
+
+            if (selfMatched) {
+                return {
+                    ...item,
+                    children
+                };
+            }
+
+            if (matchedChildren.length > 0) {
+                return {
+                    ...item,
+                    children: matchedChildren
+                };
+            }
+
+            return null;
+        };
+
         return this.items
-            .map((item) => {
-                const selfMatched = item.title.toLowerCase().includes(keyword);
-                const matchedChildren = (item.children || []).filter((child) => {
-                    return child.title.toLowerCase().includes(keyword);
-                });
-
-                if (selfMatched) {
-                    return {
-                        ...item,
-                        children: item.children || []
-                    };
-                }
-
-                if (matchedChildren.length > 0) {
-                    return {
-                        ...item,
-                        children: matchedChildren
-                    };
-                }
-
-                return null;
-            })
+            .map((item) => filterRecursively(item))
             .filter((item): item is TocItem => !!item);
     }
 
@@ -198,12 +206,9 @@ export class TocPanel {
                 itemEl.dataset.role = item.role;
                 itemEl.dataset.level = String(level);
                 itemEl.dataset.parentId = item.parentId || '';
+                itemEl.dataset.kind = item.kind;
 
-                const prefix = item.role === 'user'
-                    ? `${item.index}. `
-                    : '└ ';
-
-                itemEl.textContent = `${prefix}${item.title}`;
+                itemEl.textContent = `${buildItemPrefix(item, level)}${item.title}`;
                 itemEl.title = item.title;
                 itemEl.style.paddingLeft = `${10 + (level * 18)}px`;
 
@@ -229,4 +234,23 @@ export class TocPanel {
 
         renderItems(items, 0);
     }
+}
+
+/**
+ * 构建不同层级目录项前缀。
+ *
+ * @param item 目录项
+ * @param level 当前层级
+ * @returns 前缀文本
+ */
+function buildItemPrefix(item: TocItem, level: number): string {
+    if (item.kind === 'user') {
+        return `${item.index}. `;
+    }
+
+    if (item.kind === 'assistant') {
+        return '└ ';
+    }
+
+    return level >= 2 ? '   • ' : '• ';
 }

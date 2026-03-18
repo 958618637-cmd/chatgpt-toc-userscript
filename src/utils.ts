@@ -73,7 +73,7 @@ export function buildItemsSignature(items: TocItem[]): string {
 
     const visit = (itemList: TocItem[]): void => {
         itemList.forEach((item) => {
-            parts.push(`${item.role}:${item.index}:${item.id}:${item.title}`);
+            parts.push(`${item.kind}:${item.role}:${item.index}:${item.id}:${item.title}`);
 
             if (item.children?.length) {
                 visit(item.children);
@@ -89,19 +89,26 @@ export function buildItemsSignature(items: TocItem[]): string {
 /**
  * 将树形目录拍平成一维数组。
  *
+ * 说明：
+ * 这里改成递归拍平，支持三级及更深层目录。
+ *
  * @param items 目录项
  * @returns 拍平后的目录项
  */
 export function flattenTocItems(items: TocItem[]): TocItem[] {
     const result: TocItem[] = [];
 
-    items.forEach((item) => {
-        result.push(item);
+    const visit = (itemList: TocItem[]): void => {
+        itemList.forEach((item) => {
+            result.push(item);
 
-        if (item.children?.length) {
-            result.push(...item.children);
-        }
-    });
+            if (item.children?.length) {
+                visit(item.children);
+            }
+        });
+    };
+
+    visit(items);
 
     return result;
 }
