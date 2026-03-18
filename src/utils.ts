@@ -69,9 +69,41 @@ export function truncateText(text: string, maxLength: number): string {
  * @returns 签名字符串
  */
 export function buildItemsSignature(items: TocItem[]): string {
-    return items.map((item) => {
-        return `${item.index}:${item.id}:${item.title}`;
-    }).join('|');
+    const parts: string[] = [];
+
+    const visit = (itemList: TocItem[]): void => {
+        itemList.forEach((item) => {
+            parts.push(`${item.role}:${item.index}:${item.id}:${item.title}`);
+
+            if (item.children?.length) {
+                visit(item.children);
+            }
+        });
+    };
+
+    visit(items);
+
+    return parts.join('|');
+}
+
+/**
+ * 将树形目录拍平成一维数组。
+ *
+ * @param items 目录项
+ * @returns 拍平后的目录项
+ */
+export function flattenTocItems(items: TocItem[]): TocItem[] {
+    const result: TocItem[] = [];
+
+    items.forEach((item) => {
+        result.push(item);
+
+        if (item.children?.length) {
+            result.push(...item.children);
+        }
+    });
+
+    return result;
 }
 
 /**

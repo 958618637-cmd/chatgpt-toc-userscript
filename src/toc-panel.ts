@@ -1,11 +1,11 @@
 import {
     ACTIVE_CLASS,
-    APP_ID,
     COLLAPSED_ID,
     HEADER_ID,
     ITEM_CLASS,
     LIST_ID,
     PANEL_ID,
+    PARENT_ACTIVE_CLASS,
     SEARCH_ID,
     TOGGLE_ID
 } from './constants';
@@ -21,6 +21,7 @@ export class TocPanel {
     private collapsed = false;
     private items: TocItem[] = [];
     private activeId: string | null = null;
+    private activeParentId: string | null = null;
 
     /**
      * 创建面板。
@@ -72,7 +73,7 @@ export class TocPanel {
         this.renderList(this.getFilteredItems(), onItemClick);
 
         if (this.activeId) {
-            this.setActive(this.activeId);
+            this.setActive(this.activeId, this.activeParentId);
         }
     }
 
@@ -80,20 +81,31 @@ export class TocPanel {
      * 设置激活项。
      *
      * @param activeId 当前激活ID
+     * @param activeParentId 当前激活项所属父ID
      */
-    public setActive(activeId: string): void {
+    public setActive(activeId: string, activeParentId: string | null = null): void {
         this.activeId = activeId;
+        this.activeParentId = activeParentId;
 
         if (!this.listEl) {
             return;
         }
 
         const itemElements = this.listEl.querySelectorAll<HTMLElement>(`.${ITEM_CLASS}`);
+
         itemElements.forEach((el) => {
-            if (el.dataset.id === activeId) {
+            const itemId = el.dataset.id;
+
+            if (itemId === activeId) {
                 el.classList.add(ACTIVE_CLASS);
             } else {
                 el.classList.remove(ACTIVE_CLASS);
+            }
+
+            if (activeParentId && itemId === activeParentId) {
+                el.classList.add(PARENT_ACTIVE_CLASS);
+            } else {
+                el.classList.remove(PARENT_ACTIVE_CLASS);
             }
         });
     }
@@ -139,9 +151,30 @@ export class TocPanel {
             return this.items;
         }
 
-        return this.items.filter((item) => {
-            return item.title.toLowerCase().includes(keyword);
-        });
+        return this.items
+            .map((item) => {
+                const selfMatched = item.title.toLowerCase().includes(keyword);
+                const matchedChildren = (item.children || []).filter((child) => {
+                    return child.title.toLowerCase().includes(keyword);
+                });
+
+                if (selfMatched) {
+                    return {
+                        ...item,
+                        children: item.children || []
+                    };
+                }
+
+                if (matchedChildren.length > 0) {
+                    return {
+                        ...item,
+                        children: matchedChildren
+                    };
+                }
+
+                return null;
+            })
+            .filter((item): item is TocItem => !!item);
     }
 
     /**
@@ -157,22 +190,43 @@ export class TocPanel {
 
         this.listEl.innerHTML = '';
 
-        items.forEach((item) => {
-            const itemEl = document.createElement('div');
-            itemEl.className = ITEM_CLASS;
-            itemEl.dataset.id = item.id;
-            itemEl.textContent = `${item.index}. ${item.title}`;
-            itemEl.title = item.title;
+        const renderItems = (itemList: TocItem[], level: number): void => {
+            itemList.forEach((item) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = ITEM_CLASS;
+                itemEl.dataset.id = item.id;
+                itemEl.dataset.role = item.role;
+                itemEl.dataset.level = String(level);
+                itemEl.dataset.parentId = item.parentId || '';
 
-            if (this.activeId && this.activeId === item.id) {
-                itemEl.classList.add(ACTIVE_CLASS);
-            }
+                const prefix = item.role === 'user'
+                    ? `${item.index}. `
+                    : '└ ';
 
-            itemEl.addEventListener('click', () => {
-                onItemClick(item);
+                itemEl.textContent = `${prefix}${item.title}`;
+                itemEl.title = item.title;
+                itemEl.style.paddingLeft = `${10 + (level * 18)}px`;
+
+                if (this.activeId && this.activeId === item.id) {
+                    itemEl.classList.add(ACTIVE_CLASS);
+                }
+
+                if (this.activeParentId && this.activeParentId === item.id) {
+                    itemEl.classList.add(PARENT_ACTIVE_CLASS);
+                }
+
+                itemEl.addEventListener('click', () => {
+                    onItemClick(item);
+                });
+
+                this.listEl!.appendChild(itemEl);
+
+                if (item.children?.length) {
+                    renderItems(item.children, level + 1);
+                }
             });
+        };
 
-            this.listEl!.appendChild(itemEl);
-        });
+        renderItems(items, 0);
     }
 }

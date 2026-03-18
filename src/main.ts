@@ -1,12 +1,12 @@
 import { extractTocItems } from './conversation';
-import { getUserMessageElements } from './chatgpt-dom';
+import { getConversationMessageElements } from './chatgpt-dom';
 import { PageObserver } from './observer';
 import { ScrollManager } from './scroll-manager';
 import { injectStyles } from './style';
 import { TocPanel } from './toc-panel';
 import type { TocItem } from './types';
 import { SCROLL_SYNC_LOCK_MS } from './constants';
-import { buildItemsSignature, debounce } from './utils';
+import { buildItemsSignature, debounce, flattenTocItems } from './utils';
 
 /**
  * ChatGPT 目录应用。
@@ -49,8 +49,8 @@ class ChatGptTocApp {
      * 重建目录。
      */
     private rebuild(): void {
-        const userMessageElements = getUserMessageElements();
-        const nextItems = extractTocItems(userMessageElements);
+        const messageNodes = getConversationMessageElements();
+        const nextItems = extractTocItems(messageNodes);
         const nextSignature = buildItemsSignature(nextItems);
 
         this.items = nextItems;
@@ -72,7 +72,7 @@ class ChatGptTocApp {
      */
     private handleItemClick(item: TocItem): void {
         this.ignoreScrollSyncUntil = Date.now() + SCROLL_SYNC_LOCK_MS;
-        this.tocPanel.setActive(item.id);
+        this.tocPanel.setActive(item.id, item.parentId || null);
         this.scrollManager.scrollToItem(item);
     }
 
@@ -80,9 +80,11 @@ class ChatGptTocApp {
      * 同步激活项。
      */
     private syncActiveItem(): void {
-        const activeItem = this.scrollManager.getActiveItem(this.items);
+        const flatItems = flattenTocItems(this.items);
+        const activeItem = this.scrollManager.getActiveItem(flatItems);
+
         if (activeItem) {
-            this.tocPanel.setActive(activeItem.id);
+            this.tocPanel.setActive(activeItem.id, activeItem.parentId || null);
         }
     }
 }

@@ -1,4 +1,24 @@
 /**
+ * 页面消息节点定义。
+ */
+export interface ChatMessageNode {
+    /**
+     * 消息角色。
+     */
+    role: 'user' | 'assistant';
+
+    /**
+     * 锚点元素。
+     */
+    element: HTMLElement;
+
+    /**
+     * 文本内容。
+     */
+    text: string;
+}
+
+/**
  * 目录项定义。
  */
 export interface TocItem {
@@ -9,6 +29,7 @@ export interface TocItem {
 
     /**
      * 第几轮。
+     * 一级是用户轮次，二级是回复序号。
      */
     index: number;
 
@@ -21,4 +42,19 @@ export interface TocItem {
      * 对应的锚点元素。
      */
     element: HTMLElement;
+
+    /**
+     * 角色类型。
+     */
+    role: 'user' | 'assistant';
+
+    /**
+     * 父级 ID。
+     */
+    parentId?: string;
+
+    /**
+     * 子级目录。
+     */
+    children?: TocItem[];
 }

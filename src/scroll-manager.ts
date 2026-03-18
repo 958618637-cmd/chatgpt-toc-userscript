@@ -45,6 +45,13 @@ export class ScrollManager {
             return active;
         }
 
-        return items[0] || null;
+        for (const item of items) {
+            const rect = item.element.getBoundingClientRect();
+            if (rect.top >= offset) {
+                return item;
+            }
+        }
+
+        return items[items.length - 1] || null;
     }
 }

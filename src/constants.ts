@@ -11,11 +11,13 @@ export const COLLAPSED_ID = `${APP_ID}-collapsed`;
 export const HEADER_ID = `${APP_ID}-header`;
 
 export const ACTIVE_CLASS = `${APP_ID}-active`;
+export const PARENT_ACTIVE_CLASS = `${APP_ID}-parent-active`;
 export const ITEM_CLASS = `${APP_ID}-item`;
 
 export const MESSAGE_ATTR = 'data-chatgpt-toc-id';
 
 export const TITLE_MAX_LENGTH = 32;
+export const ASSISTANT_TITLE_MAX_LENGTH = 40;
 
 /**
  * MutationObserver 的刷新延迟。
