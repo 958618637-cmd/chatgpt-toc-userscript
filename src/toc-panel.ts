@@ -1,4 +1,14 @@
-import { ACTIVE_CLASS, ITEM_CLASS, LIST_ID, PANEL_ID, SEARCH_ID, TOGGLE_ID, APP_ID } from './constants';
+import {
+    ACTIVE_CLASS,
+    APP_ID,
+    COLLAPSED_ID,
+    HEADER_ID,
+    ITEM_CLASS,
+    LIST_ID,
+    PANEL_ID,
+    SEARCH_ID,
+    TOGGLE_ID
+} from './constants';
 import type { TocItem } from './types';
 
 /**
@@ -10,6 +20,7 @@ export class TocPanel {
     private searchEl: HTMLInputElement | null = null;
     private collapsed = false;
     private items: TocItem[] = [];
+    private activeId: string | null = null;
 
     /**
      * 创建面板。
@@ -26,7 +37,7 @@ export class TocPanel {
         panel.id = PANEL_ID;
 
         panel.innerHTML = `
-            <div id="${APP_ID}-header">
+            <div id="${HEADER_ID}">
                 <span>会话目录</span>
                 <button id="${TOGGLE_ID}" title="折叠">◀</button>
             </div>
@@ -59,6 +70,10 @@ export class TocPanel {
     public update(items: TocItem[], onItemClick: (item: TocItem) => void): void {
         this.items = items;
         this.renderList(this.getFilteredItems(), onItemClick);
+
+        if (this.activeId) {
+            this.setActive(this.activeId);
+        }
     }
 
     /**
@@ -67,6 +82,8 @@ export class TocPanel {
      * @param activeId 当前激活ID
      */
     public setActive(activeId: string): void {
+        this.activeId = activeId;
+
         if (!this.listEl) {
             return;
         }
@@ -94,16 +111,19 @@ export class TocPanel {
         if (this.collapsed) {
             this.panelEl.style.display = 'none';
 
-            const collapsedBtn = document.createElement('div');
-            collapsedBtn.id = `${APP_ID}-collapsed`;
-            collapsedBtn.textContent = '目录';
-            collapsedBtn.addEventListener('click', () => {
-                this.collapsed = false;
-                this.panelEl!.style.display = 'flex';
-                collapsedBtn.remove();
-            });
+            let collapsedBtn = document.getElementById(COLLAPSED_ID);
+            if (!collapsedBtn) {
+                collapsedBtn = document.createElement('div');
+                collapsedBtn.id = COLLAPSED_ID;
+                collapsedBtn.textContent = '目录';
+                collapsedBtn.addEventListener('click', () => {
+                    this.collapsed = false;
+                    this.panelEl!.style.display = 'flex';
+                    collapsedBtn!.remove();
+                });
 
-            document.body.appendChild(collapsedBtn);
+                document.body.appendChild(collapsedBtn);
+            }
         }
     }
 
@@ -143,6 +163,10 @@ export class TocPanel {
             itemEl.dataset.id = item.id;
             itemEl.textContent = `${item.index}. ${item.title}`;
             itemEl.title = item.title;
+
+            if (this.activeId && this.activeId === item.id) {
+                itemEl.classList.add(ACTIVE_CLASS);
+            }
 
             itemEl.addEventListener('click', () => {
                 onItemClick(item);

@@ -1,6 +1,6 @@
 import { MESSAGE_ATTR, TITLE_MAX_LENGTH } from './constants';
 import type { TocItem } from './types';
-import { createId, normalizeText, truncateText } from './utils';
+import { createStableId, normalizeText, truncateText } from './utils';
 
 /**
  * 从页面中提取目录项。
@@ -10,14 +10,14 @@ import { createId, normalizeText, truncateText } from './utils';
  */
 export function extractTocItems(userMessageElements: HTMLElement[]): TocItem[] {
     return userMessageElements.map((element, index) => {
+        const rawText = normalizeText(element.textContent || '');
         let id = element.getAttribute(MESSAGE_ATTR);
 
         if (!id) {
-            id = createId('msg', index + 1);
+            id = createStableId('msg', index + 1, rawText);
             element.setAttribute(MESSAGE_ATTR, id);
         }
 
-        const rawText = normalizeText(element.textContent || '');
         const title = rawText
             ? truncateText(rawText, TITLE_MAX_LENGTH)
             : `第 ${index + 1} 轮对话`;

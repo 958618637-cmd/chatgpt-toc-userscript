@@ -104,6 +104,14 @@ body.dark #${APP_ID}-header {
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     cursor: pointer;
+    user-select: none;
+}
+
+html.dark #${APP_ID}-collapsed,
+body.dark #${APP_ID}-collapsed {
+    background: rgba(32, 33, 35, 0.96);
+    color: #f5f5f5;
+    border-color: #4b5563;
 }
 `;
     document.head.appendChild(style);

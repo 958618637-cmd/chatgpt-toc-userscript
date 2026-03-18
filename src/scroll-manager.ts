@@ -23,19 +23,28 @@ export class ScrollManager {
      * @returns 当前激活项
      */
     public getActiveItem(items: TocItem[]): TocItem | null {
+        if (!items.length) {
+            return null;
+        }
+
         const offset = 140;
         let active: TocItem | null = null;
+        let minDistance = Number.MAX_SAFE_INTEGER;
 
         for (const item of items) {
             const rect = item.element.getBoundingClientRect();
+            const distance = offset - rect.top;
 
-            if (rect.top <= offset) {
+            if (distance >= 0 && distance < minDistance) {
+                minDistance = distance;
                 active = item;
-            } else {
-                break;
             }
         }
 
-        return active;
+        if (active) {
+            return active;
+        }
+
+        return items[0] || null;
     }
 }

@@ -1,11 +1,12 @@
 import { extractTocItems } from './conversation';
 import { getUserMessageElements } from './chatgpt-dom';
+import { PageObserver } from './observer';
 import { ScrollManager } from './scroll-manager';
 import { injectStyles } from './style';
 import { TocPanel } from './toc-panel';
-import { PageObserver } from './observer';
 import type { TocItem } from './types';
-import { debounce } from './utils';
+import { SCROLL_SYNC_LOCK_MS } from './constants';
+import { buildItemsSignature, debounce } from './utils';
 
 /**
  * ChatGPT 目录应用。
@@ -15,6 +16,8 @@ class ChatGptTocApp {
     private scrollManager = new ScrollManager();
     private pageObserver = new PageObserver();
     private items: TocItem[] = [];
+    private lastItemsSignature = '';
+    private ignoreScrollSyncUntil = 0;
 
     /**
      * 启动应用。
@@ -32,6 +35,10 @@ class ChatGptTocApp {
         window.addEventListener(
             'scroll',
             debounce(() => {
+                if (Date.now() < this.ignoreScrollSyncUntil) {
+                    return;
+                }
+
                 this.syncActiveItem();
             }, 100),
             true
@@ -43,9 +50,19 @@ class ChatGptTocApp {
      */
     private rebuild(): void {
         const userMessageElements = getUserMessageElements();
-        this.items = extractTocItems(userMessageElements);
-        this.tocPanel.update(this.items, (item) => this.handleItemClick(item));
-        this.syncActiveItem();
+        const nextItems = extractTocItems(userMessageElements);
+        const nextSignature = buildItemsSignature(nextItems);
+
+        this.items = nextItems;
+
+        if (nextSignature !== this.lastItemsSignature) {
+            this.lastItemsSignature = nextSignature;
+            this.tocPanel.update(this.items, (item) => this.handleItemClick(item));
+        }
+
+        if (Date.now() >= this.ignoreScrollSyncUntil) {
+            this.syncActiveItem();
+        }
     }
 
     /**
@@ -54,8 +71,9 @@ class ChatGptTocApp {
      * @param item 目录项
      */
     private handleItemClick(item: TocItem): void {
-        this.scrollManager.scrollToItem(item);
+        this.ignoreScrollSyncUntil = Date.now() + SCROLL_SYNC_LOCK_MS;
         this.tocPanel.setActive(item.id);
+        this.scrollManager.scrollToItem(item);
     }
 
     /**
