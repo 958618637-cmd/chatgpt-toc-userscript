@@ -1,0 +1,126 @@
+############################
+# Node modules
+############################
+node_modules/
+jspm_packages/
+
+############################
+# Logs
+############################
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+############################
+# Runtime data
+############################
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+############################
+# Coverage / test
+############################
+coverage/
+.nyc_output/
+
+############################
+# Build output
+############################
+dist/
+build/
+out/
+.next/
+.nuxt/
+.temp/
+.tmp/
+
+############################
+# Cache
+############################
+.cache/
+.parcel-cache/
+.eslintcache
+
+############################
+# Environment files
+############################
+.env
+.env.*
+!.env.example
+
+############################
+# OS files
+############################
+.DS_Store
+Thumbs.db
+
+############################
+# IDE / Editor
+############################
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+############################
+# TypeScript
+############################
+*.tsbuildinfo
+
+############################
+# Package manager
+############################
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ⚠️ 注意：
+# 如果你是团队项目，一般建议保留 lock 文件
+# 删除上面这一段即可
+
+############################
+# Electron
+############################
+release/
+dist_electron/
+*.asar
+
+############################
+# Misc
+############################
+*.local
+*.tmp
+*.swp
+
+############################
+# Debug
+############################
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+############################
+# Optional
+############################
+# Mac resource fork
+._*
+
+# Linux trash
+.Trash-*
+
+# Windows image file caches
+ehthumbs.db
+
+############################
+# Custom（你可以自己加）
+############################
+# extjs build（如果你有）
+# build/
+# sass-cache/
