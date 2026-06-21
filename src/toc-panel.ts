@@ -1,8 +1,11 @@
 import {
     ACTIVE_CLASS,
+    APP_ID,
     COLLAPSED_ID,
+    DEFAULT_TOC_VISIBLE_LEVEL,
     HEADER_ID,
     ITEM_CLASS,
+    LEVEL_SELECT_ID,
     LIST_ID,
     PANEL_ID,
     PARENT_ACTIVE_CLASS,
@@ -18,10 +21,12 @@ export class TocPanel {
     private panelEl: HTMLElement | null = null;
     private listEl: HTMLElement | null = null;
     private searchEl: HTMLInputElement | null = null;
+    private levelSelectEl: HTMLSelectElement | null = null;
     private collapsed = false;
     private items: TocItem[] = [];
     private activeId: string | null = null;
     private activeParentId: string | null = null;
+    private maxVisibleLevel: 2 | 3 = DEFAULT_TOC_VISIBLE_LEVEL;
 
     /**
      * 创建面板。
@@ -31,6 +36,7 @@ export class TocPanel {
             this.panelEl = document.getElementById(PANEL_ID);
             this.listEl = document.getElementById(LIST_ID);
             this.searchEl = document.getElementById(SEARCH_ID) as HTMLInputElement | null;
+            this.levelSelectEl = document.getElementById(LEVEL_SELECT_ID) as HTMLSelectElement | null;
             return;
         }
 
@@ -40,7 +46,16 @@ export class TocPanel {
         panel.innerHTML = `
             <div id="${HEADER_ID}">
                 <span>会话目录</span>
-                <button id="${TOGGLE_ID}" title="折叠">◀</button>
+                <div class="${APP_ID}-header-actions">
+                    <label class="${APP_ID}-level-label" title="控制目录显示层级">
+                        层级
+                        <select id="${LEVEL_SELECT_ID}">
+                            <option value="2"${DEFAULT_TOC_VISIBLE_LEVEL === 2 ? ' selected' : ''}>2级</option>
+                            <option value="3"${DEFAULT_TOC_VISIBLE_LEVEL === 3 ? ' selected' : ''}>3级</option>
+                        </select>
+                    </label>
+                    <button id="${TOGGLE_ID}" title="折叠">◀</button>
+                </div>
             </div>
             <input id="${SEARCH_ID}" type="text" placeholder="搜索目录..." />
             <div id="${LIST_ID}"></div>
@@ -51,6 +66,7 @@ export class TocPanel {
         this.panelEl = panel;
         this.listEl = panel.querySelector(`#${LIST_ID}`);
         this.searchEl = panel.querySelector(`#${SEARCH_ID}`) as HTMLInputElement;
+        this.levelSelectEl = panel.querySelector(`#${LEVEL_SELECT_ID}`) as HTMLSelectElement;
 
         const toggleButton = panel.querySelector(`#${TOGGLE_ID}`) as HTMLButtonElement;
         toggleButton.addEventListener('click', () => {
@@ -59,6 +75,17 @@ export class TocPanel {
 
         this.searchEl.addEventListener('input', () => {
             this.renderList(this.getFilteredItems(), onItemClick);
+        });
+
+        this.levelSelectEl.addEventListener('change', () => {
+            const value = Number(this.levelSelectEl?.value || DEFAULT_TOC_VISIBLE_LEVEL);
+            this.maxVisibleLevel = value === 3 ? 3 : 2;
+
+            this.renderList(this.getFilteredItems(), onItemClick);
+
+            if (this.activeId) {
+                this.setActive(this.activeId, this.activeParentId);
+            }
         });
     }
 
@@ -151,9 +178,10 @@ export class TocPanel {
      */
     private getFilteredItems(): TocItem[] {
         const keyword = (this.searchEl?.value || '').trim().toLowerCase();
+        const visibleItems = this.limitItemsByDepth(this.items, this.maxVisibleLevel);
 
         if (!keyword) {
-            return this.items;
+            return visibleItems;
         }
 
         const filterRecursively = (item: TocItem): TocItem | null => {
@@ -180,9 +208,41 @@ export class TocPanel {
             return null;
         };
 
-        return this.items
+        return visibleItems
             .map((item) => filterRecursively(item))
             .filter((item): item is TocItem => !!item);
+    }
+
+    /**
+     * 按最大层级裁剪目录树。
+     *
+     * 说明：
+     * 1. 不修改原始目录数据。
+     * 2. 只控制面板显示层级。
+     * 3. 1级：用户问题
+     * 4. 2级：GPT 回复
+     * 5. 3级：GPT 标题
+     *
+     * @param items 原始目录项
+     * @param maxLevel 最大显示层级
+     * @param currentLevel 当前层级
+     * @returns 裁剪后的目录项
+     */
+    private limitItemsByDepth(
+        items: TocItem[],
+        maxLevel: number,
+        currentLevel = 1
+    ): TocItem[] {
+        return items.map((item) => {
+            const canShowChildren = currentLevel < maxLevel && item.children?.length;
+
+            return {
+                ...item,
+                children: canShowChildren
+                    ? this.limitItemsByDepth(item.children!, maxLevel, currentLevel + 1)
+                    : []
+            };
+        });
     }
 
     /**

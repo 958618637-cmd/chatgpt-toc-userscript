@@ -9,6 +9,15 @@ export const SEARCH_ID = `${APP_ID}-search`;
 export const TOGGLE_ID = `${APP_ID}-toggle`;
 export const COLLAPSED_ID = `${APP_ID}-collapsed`;
 export const HEADER_ID = `${APP_ID}-header`;
+export const LEVEL_SELECT_ID = `${APP_ID}-level-select`;
+
+/**
+ * 默认显示目录层级。
+ *
+ * 2：只显示 用户问题 + GPT回复
+ * 3：显示 用户问题 + GPT回复 + 标题
+ */
+export const DEFAULT_TOC_VISIBLE_LEVEL = 2;
 
 export const ACTIVE_CLASS = `${APP_ID}-active`;
 export const PARENT_ACTIVE_CLASS = `${APP_ID}-parent-active`;

@@ -51,6 +51,43 @@ body.dark #${APP_ID}-header {
     border-bottom-color: #4b5563;
 }
 
+.${APP_ID}-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.${APP_ID}-level-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: normal;
+    color: #606266;
+}
+
+html.dark .${APP_ID}-level-label,
+body.dark .${APP_ID}-level-label {
+    color: #d1d5db;
+}
+
+#${APP_ID}-level-select {
+    height: 24px;
+    padding: 0 4px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 12px;
+    outline: none;
+}
+
+html.dark #${APP_ID}-level-select,
+body.dark #${APP_ID}-level-select {
+    background: #2f3033;
+    color: #f5f5f5;
+    border-color: #4b5563;
+}
+
 #${APP_ID}-search {
     margin: 8px 12px;
     padding: 8px 10px;
@@ -84,6 +121,11 @@ body.dark #${APP_ID}-header {
 .${APP_ID}-item.${APP_ID}-active {
     background: rgba(59, 130, 246, 0.16);
     font-weight: bold;
+}
+
+.${APP_ID}-item.${APP_ID}-parent-active {
+    background: rgba(59, 130, 246, 0.10);
+    font-weight: 600;
 }
 
 #${APP_ID}-toggle {
