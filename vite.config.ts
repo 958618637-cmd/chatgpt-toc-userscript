@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 const userscriptHeader = `// ==UserScript==
 // @name         ChatGPT TOC Navigator
@@ -14,7 +14,37 @@ const userscriptHeader = `// ==UserScript==
 
 `;
 
+function userscriptHeaderPlugin(): Plugin {
+    return {
+        name: 'vite-plugin-userscript-header',
+        apply: 'build',
+        enforce: 'post',
+
+        generateBundle(_, bundle) {
+            Object.values(bundle).forEach((file) => {
+                if (file.type !== 'chunk') {
+                    return;
+                }
+
+                if (!file.fileName.endsWith('.user.js')) {
+                    return;
+                }
+
+                if (file.code.startsWith('// ==UserScript==')) {
+                    return;
+                }
+
+                file.code = userscriptHeader + file.code;
+            });
+        }
+    };
+}
+
 export default defineConfig({
+    plugins: [
+        userscriptHeaderPlugin()
+    ],
+
     build: {
         target: 'es2020',
         minify: false,
@@ -26,8 +56,7 @@ export default defineConfig({
         },
         rollupOptions: {
             output: {
-                extend: true,
-                intro: userscriptHeader
+                extend: true
             }
         }
     }
