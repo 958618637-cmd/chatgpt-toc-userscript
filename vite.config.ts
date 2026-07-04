@@ -8,7 +8,7 @@ const userscriptHeader = `// ==UserScript==
 // @author       PengGe
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
-// @grant        none
+// @grant        GM_notification
 // @run-at       document-idle
 // ==/UserScript==
 

@@ -44,3 +44,18 @@ export const REBUILD_DELAY = 300;
  * 避免 smooth scroll 过程中 active 来回闪动。
  */
 export const SCROLL_SYNC_LOCK_MS = 800;
+
+/**
+ * GPT 回复完成检测：内容稳定多久后认为完成。
+ */
+export const REPLY_NOTIFY_QUIET_MS = 1500;
+
+/**
+ * GPT 回复完成检测轮询间隔。
+ */
+export const REPLY_NOTIFY_CHECK_DELAY = 800;
+
+/**
+ * GPT 回复完成通知标题。
+ */
+export const REPLY_NOTIFY_TITLE = 'GPT 回复完成';

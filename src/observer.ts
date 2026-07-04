@@ -29,6 +29,7 @@ export class PageObserver {
 
         this.observer.observe(document.body, {
             childList: true,
+            characterData: true,
             subtree: true
         });
     }

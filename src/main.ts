@@ -1,6 +1,7 @@
 import { extractTocItems } from './conversation';
 import { getConversationMessageElements } from './chatgpt-dom';
 import { PageObserver } from './observer';
+import { ReplyNotifier } from './reply-notifier';
 import { ScrollManager } from './scroll-manager';
 import { injectStyles } from './style';
 import { TocPanel } from './toc-panel';
@@ -15,6 +16,7 @@ class ChatGptTocApp {
     private tocPanel = new TocPanel();
     private scrollManager = new ScrollManager();
     private pageObserver = new PageObserver();
+    private replyNotifier = new ReplyNotifier();
     private items: TocItem[] = [];
     private lastItemsSignature = '';
     private ignoreScrollSyncUntil = 0;
@@ -28,8 +30,14 @@ class ChatGptTocApp {
 
         this.rebuild();
 
+        // 初始化通知器：把当前历史消息作为基线，避免历史回复误通知。
+        this.replyNotifier.start();
+
         this.pageObserver.start(() => {
             this.rebuild();
+
+            // 每次页面 DOM 变化后，检测 GPT 回复是否完成。
+            this.replyNotifier.scan();
         });
 
         window.addEventListener(
