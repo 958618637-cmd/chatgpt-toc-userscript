@@ -1,5 +1,6 @@
 import { extractTocItems } from './conversation';
 import { getConversationMessageElements } from './chatgpt-dom';
+import { BatchConversationDeleter } from './batch-conversation-deleter';
 import { CurrentConversationDeleter } from './current-conversation-deleter';
 import { PageObserver } from './observer';
 import { ReplyCopyManager } from './reply-copy-manager';
@@ -21,6 +22,7 @@ class ChatGptTocApp {
     private replyNotifier = new ReplyNotifier();
     private replyCopyManager = new ReplyCopyManager();
     private conversationDeleter = new CurrentConversationDeleter();
+    private batchConversationDeleter = new BatchConversationDeleter();
     private items: TocItem[] = [];
     private lastItemsSignature = '';
     private ignoreScrollSyncUntil = 0;
@@ -34,7 +36,8 @@ class ChatGptTocApp {
             (item) => this.handleItemClick(item),
             (item) => this.handleItemCopy(item),
             (item) => this.handleItemCopyForModification(item),
-            () => this.conversationDeleter.deleteCurrentConversation()
+            () => this.conversationDeleter.deleteCurrentConversation(),
+            () => this.batchConversationDeleter.open()
         );
 
         this.rebuild();

@@ -22,6 +22,16 @@ export const FOOTER_ID = `${APP_ID}-footer`;
 export const DELETE_CURRENT_ID = `${APP_ID}-delete-current`;
 
 /**
+ * 批量删除会话按钮。
+ */
+export const BATCH_DELETE_ID = `${APP_ID}-delete-batch`;
+
+/**
+ * 批量删除会话弹窗。
+ */
+export const BATCH_DELETE_DIALOG_ID = `${APP_ID}-batch-delete-dialog`;
+
+/**
  * 默认显示目录层级。
  *
  * 2：只显示 用户问题 + GPT回复

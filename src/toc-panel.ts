@@ -1,6 +1,7 @@
 import {
     ACTIVE_CLASS,
     APP_ID,
+    BATCH_DELETE_ID,
     COLLAPSED_ID,
     DEFAULT_TOC_VISIBLE_LEVEL,
     DELETE_CURRENT_ID,
@@ -25,6 +26,7 @@ export class TocPanel {
     private searchEl: HTMLInputElement | null = null;
     private levelSelectEl: HTMLSelectElement | null = null;
     private deleteCurrentButtonEl: HTMLButtonElement | null = null;
+    private batchDeleteButtonEl: HTMLButtonElement | null = null;
     private collapsed = false;
     private items: TocItem[] = [];
     private activeId: string | null = null;
@@ -38,7 +40,8 @@ export class TocPanel {
         onItemClick: (item: TocItem) => void,
         onItemCopy: (item: TocItem) => Promise<boolean>,
         onItemCopyForModification: (item: TocItem) => Promise<boolean>,
-        onDeleteCurrentConversation?: () => Promise<void>
+        onDeleteCurrentConversation?: () => Promise<void>,
+        onBatchDeleteConversations?: () => Promise<void>
     ): void {
         if (document.getElementById(PANEL_ID)) {
             this.panelEl = document.getElementById(PANEL_ID);
@@ -50,7 +53,12 @@ export class TocPanel {
                 DELETE_CURRENT_ID
             ) as HTMLButtonElement | null;
 
+            this.batchDeleteButtonEl = document.getElementById(
+                BATCH_DELETE_ID
+            ) as HTMLButtonElement | null;
+
             this.bindDeleteCurrentButton(onDeleteCurrentConversation);
+            this.bindBatchDeleteButton(onBatchDeleteConversations);
             return;
         }
 
@@ -77,6 +85,14 @@ export class TocPanel {
 
             <div id="${FOOTER_ID}">
                 <button
+                    id="${BATCH_DELETE_ID}"
+                    type="button"
+                    title="从左侧聊天列表选择多个会话进行删除"
+                >
+                    批量删除会话
+                </button>
+
+                <button
                     id="${DELETE_CURRENT_ID}"
                     type="button"
                     title="直接删除当前会话，不再进行插件确认"
@@ -97,7 +113,12 @@ export class TocPanel {
             `#${DELETE_CURRENT_ID}`
         ) as HTMLButtonElement;
 
+        this.batchDeleteButtonEl = panel.querySelector(
+            `#${BATCH_DELETE_ID}`
+        ) as HTMLButtonElement;
+
         this.bindDeleteCurrentButton(onDeleteCurrentConversation);
+        this.bindBatchDeleteButton(onBatchDeleteConversations);
 
         const toggleButton = panel.querySelector(`#${TOGGLE_ID}`) as HTMLButtonElement;
         toggleButton.addEventListener('click', () => {
@@ -280,6 +301,42 @@ export class TocPanel {
 
                     button.textContent = normalText;
                 }, 2500);
+            }
+        };
+    }
+
+    /**
+     * 绑定批量删除会话按钮。
+     *
+     * @param onBatchDeleteConversations 打开批量删除窗口回调
+     */
+    private bindBatchDeleteButton(
+        onBatchDeleteConversations?: () => Promise<void>
+    ): void {
+        const button = this.batchDeleteButtonEl;
+
+        if (!button || !onBatchDeleteConversations) {
+            return;
+        }
+
+        button.onclick = async () => {
+            if (button.disabled) {
+                return;
+            }
+
+            button.disabled = true;
+
+            try {
+                await onBatchDeleteConversations();
+            } catch (error) {
+                const message = error instanceof Error
+                    ? error.message
+                    : String(error || '打开批量删除窗口失败');
+
+                console.error('[ChatGPT TOC] 打开批量删除窗口失败：', error);
+                window.alert(message);
+            } finally {
+                button.disabled = false;
             }
         };
     }
