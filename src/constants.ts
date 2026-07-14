@@ -69,3 +69,11 @@ export const REPLY_NOTIFY_CHECK_DELAY = 800;
  * GPT 回复完成通知标题。
  */
 export const REPLY_NOTIFY_TITLE = 'GPT 回复完成';
+
+/**
+ * "复制并修改"功能追加的默认指令。
+ *
+ * 用户复制 GPT 回复时，自动在末尾追加此指令，
+ * 便于直接粘贴到对话框中要求修改。
+ */
+export const COPY_MODIFY_SUFFIX = '请按上述内容进行修改。';

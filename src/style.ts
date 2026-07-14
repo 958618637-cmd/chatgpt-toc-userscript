@@ -256,6 +256,47 @@ body.dark .${APP_ID}-copy-button:hover {
     background: rgba(96, 165, 250, 0.16);
 }
 
+.${APP_ID}-copy-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: -2px;
+}
+
+.${APP_ID}-copy-actions .${APP_ID}-copy-button {
+    margin-top: 0;
+}
+
+/*
+ * "复制并修改"是常用功能，默认显示得更明显。
+ */
+.${APP_ID}-copy-modify-button {
+    opacity: 0.8;
+    color: #7c3aed;
+    background: rgba(124, 58, 237, 0.08);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.${APP_ID}-copy-modify-button:hover {
+    opacity: 1;
+    color: #6d28d9;
+    background: rgba(124, 58, 237, 0.16);
+}
+
+html.dark .${APP_ID}-copy-modify-button,
+body.dark .${APP_ID}-copy-modify-button {
+    color: #c4b5fd;
+    background: rgba(167, 139, 250, 0.12);
+}
+
+html.dark .${APP_ID}-copy-modify-button:hover,
+body.dark .${APP_ID}-copy-modify-button:hover {
+    color: #ddd6fe;
+    background: rgba(167, 139, 250, 0.22);
+}
+
 #${APP_ID}-toggle {
     cursor: pointer;
     border: none;

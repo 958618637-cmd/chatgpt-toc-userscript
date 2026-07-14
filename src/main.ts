@@ -33,6 +33,7 @@ class ChatGptTocApp {
         this.tocPanel.mount(
             (item) => this.handleItemClick(item),
             (item) => this.handleItemCopy(item),
+            (item) => this.handleItemCopyForModification(item),
             () => this.conversationDeleter.deleteCurrentConversation()
         );
 
@@ -76,7 +77,8 @@ class ChatGptTocApp {
             this.tocPanel.update(
                 this.items,
                 (item) => this.handleItemClick(item),
-                (item) => this.handleItemCopy(item)
+                (item) => this.handleItemCopy(item),
+                (item) => this.handleItemCopyForModification(item)
             );
         }
 
@@ -104,6 +106,18 @@ class ChatGptTocApp {
      */
     private async handleItemCopy(item: TocItem): Promise<boolean> {
         return this.replyCopyManager.copy(item);
+    }
+
+    /**
+     * 复制目录项对应的 GPT 回复，并追加修改指令。
+     *
+     * @param item 目录项
+     * @returns 是否复制成功
+     */
+    private async handleItemCopyForModification(
+        item: TocItem
+    ): Promise<boolean> {
+        return this.replyCopyManager.copyForModification(item);
     }
 
     /**

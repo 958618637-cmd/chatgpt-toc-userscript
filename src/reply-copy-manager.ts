@@ -1,3 +1,4 @@
+import { COPY_MODIFY_SUFFIX } from './constants';
 import type { TocItem } from './types';
 
 /**
@@ -35,6 +36,191 @@ export class ReplyCopyManager {
         }
 
         return this.writeText(content);
+    }
+
+    /**
+     * 复制 GPT 回复，并追加修改指令。
+     *
+     * 处理流程：
+     * 1. 点击 ChatGPT 原生复制按钮；
+     * 2. 从剪贴板读取原生复制出来的 Markdown；
+     * 3. 在 Markdown 外增加包装内容；
+     * 4. 重新写入剪贴板。
+     *
+     * @param item 目录项
+     * @returns 是否复制成功
+     */
+    public async copyForModification(item: TocItem): Promise<boolean> {
+        if (item.kind !== 'assistant') {
+            return false;
+        }
+
+        const nativeCopyButton = this.findNativeCopyButton(item.element);
+
+        /*
+         * 优先使用 ChatGPT 原生复制。
+         *
+         * 原生复制出来的是 Markdown 源文本，
+         * 不能直接使用 innerText，否则 Markdown 格式会丢失。
+         */
+        if (nativeCopyButton) {
+            const markdown = await this.getNativeCopiedMarkdown(
+                nativeCopyButton
+            );
+
+            if (!markdown) {
+                return false;
+            }
+
+            return this.writeText(
+                this.buildModificationContent(markdown)
+            );
+        }
+
+        /*
+         * 找不到原生复制按钮时才降级为正文纯文本。
+         */
+        const contentElement = this.findReplyContentElement(item.element);
+        const content = this.getReplyText(contentElement);
+
+        if (!content) {
+            return false;
+        }
+
+        return this.writeText(
+            this.buildModificationContent(content)
+        );
+    }
+
+    /**
+     * 通过 ChatGPT 原生复制按钮获取 Markdown 内容。
+     *
+     * @param nativeCopyButton ChatGPT 原生复制按钮
+     * @returns Markdown 内容
+     */
+    private async getNativeCopiedMarkdown(
+        nativeCopyButton: HTMLButtonElement
+    ): Promise<string | null> {
+        if (!navigator.clipboard?.readText) {
+            console.warn(
+                '[ChatGPT TOC] 当前浏览器不支持读取剪贴板，无法获取原生 Markdown。'
+            );
+
+            return null;
+        }
+
+        let previousClipboardText: string | null = null;
+
+        /*
+         * 先记录原剪贴板内容。
+         *
+         * 读取失败不影响后续操作，
+         * 可能只是浏览器尚未授予 clipboard-read 权限。
+         */
+        try {
+            previousClipboardText = await navigator.clipboard.readText();
+        } catch (error) {
+            console.debug(
+                '[ChatGPT TOC] 读取原剪贴板内容失败，将直接等待原生复制结果。',
+                error
+            );
+        }
+
+        nativeCopyButton.click();
+
+        return this.waitForClipboardText(previousClipboardText);
+    }
+
+    /**
+     * 等待 ChatGPT 原生复制完成。
+     *
+     * ChatGPT 原生复制可能是异步写入剪贴板，
+     * 因此不能在 click() 后立即读取。
+     *
+     * @param previousText 复制前的剪贴板内容
+     * @returns 新的剪贴板内容
+     */
+    private async waitForClipboardText(
+        previousText: string | null
+    ): Promise<string | null> {
+        const timeout = 1500;
+        const interval = 80;
+        const startedAt = Date.now();
+
+        while (Date.now() - startedAt < timeout) {
+            await this.sleep(interval);
+
+            try {
+                const currentText = await navigator.clipboard.readText();
+                const elapsed = Date.now() - startedAt;
+
+                if (!currentText.trim()) {
+                    continue;
+                }
+
+                /*
+                 * 满足任意条件即可认为原生复制完成：
+                 *
+                 * 1. 当前内容和原剪贴板内容不同；
+                 * 2. 无法读取原剪贴板内容；
+                 * 3. 已等待一定时间。
+                 *
+                 * 第 3 条用于处理连续复制相同回复的情况。
+                 */
+                if (
+                    previousText === null ||
+                    currentText !== previousText ||
+                    elapsed >= 320
+                ) {
+                    return currentText;
+                }
+            } catch (error) {
+                console.warn(
+                    '[ChatGPT TOC] 无法读取 ChatGPT 原生复制内容。',
+                    error
+                );
+
+                return null;
+            }
+        }
+
+        console.warn(
+            '[ChatGPT TOC] 等待 ChatGPT 原生复制内容超时。'
+        );
+
+        return null;
+    }
+
+    /**
+     * 构建"复制并修改"的最终内容。
+     *
+     * 将方括号单独放在一行，
+     * 避免破坏 Markdown 标题、列表和代码块格式。
+     *
+     * @param content ChatGPT 原生复制内容
+     * @returns 最终复制内容
+     */
+    private buildModificationContent(content: string): string {
+        const normalizedContent = content.trim();
+
+        return [
+            '【',
+            normalizedContent,
+            '】',
+            '',
+            COPY_MODIFY_SUFFIX
+        ].join('\n');
+    }
+
+    /**
+     * 延迟执行。
+     *
+     * @param delay 延迟毫秒
+     */
+    private sleep(delay: number): Promise<void> {
+        return new Promise((resolve) => {
+            window.setTimeout(resolve, delay);
+        });
     }
 
     /**

@@ -37,6 +37,7 @@ export class TocPanel {
     public mount(
         onItemClick: (item: TocItem) => void,
         onItemCopy: (item: TocItem) => Promise<boolean>,
+        onItemCopyForModification: (item: TocItem) => Promise<boolean>,
         onDeleteCurrentConversation?: () => Promise<void>
     ): void {
         if (document.getElementById(PANEL_ID)) {
@@ -104,14 +105,24 @@ export class TocPanel {
         });
 
         this.searchEl.addEventListener('input', () => {
-            this.renderList(this.getFilteredItems(), onItemClick, onItemCopy);
+            this.renderList(
+                this.getFilteredItems(),
+                onItemClick,
+                onItemCopy,
+                onItemCopyForModification
+            );
         });
 
         this.levelSelectEl.addEventListener('change', () => {
             const value = Number(this.levelSelectEl?.value || DEFAULT_TOC_VISIBLE_LEVEL);
             this.maxVisibleLevel = value === 3 ? 3 : 2;
 
-            this.renderList(this.getFilteredItems(), onItemClick, onItemCopy);
+            this.renderList(
+                this.getFilteredItems(),
+                onItemClick,
+                onItemCopy,
+                onItemCopyForModification
+            );
 
             if (this.activeId) {
                 this.setActive(this.activeId, this.activeParentId);
@@ -124,14 +135,22 @@ export class TocPanel {
      *
      * @param items 目录项
      * @param onItemClick 点击事件
+     * @param onItemCopy 普通复制事件
+     * @param onItemCopyForModification 复制并修改事件
      */
     public update(
         items: TocItem[],
         onItemClick: (item: TocItem) => void,
-        onItemCopy: (item: TocItem) => Promise<boolean>
+        onItemCopy: (item: TocItem) => Promise<boolean>,
+        onItemCopyForModification: (item: TocItem) => Promise<boolean>
     ): void {
         this.items = items;
-        this.renderList(this.getFilteredItems(), onItemClick, onItemCopy);
+        this.renderList(
+            this.getFilteredItems(),
+            onItemClick,
+            onItemCopy,
+            onItemCopyForModification
+        );
 
         if (this.activeId) {
             this.setActive(this.activeId, this.activeParentId);
@@ -350,11 +369,13 @@ export class TocPanel {
      * @param items 目录项
      * @param onItemClick 点击目录项
      * @param onItemCopy 复制 GPT 回复
+     * @param onItemCopyForModification 复制 GPT 回复并追加修改指令
      */
     private renderList(
         items: TocItem[],
         onItemClick: (item: TocItem) => void,
-        onItemCopy: (item: TocItem) => Promise<boolean>
+        onItemCopy: (item: TocItem) => Promise<boolean>,
+        onItemCopyForModification: (item: TocItem) => Promise<boolean>
     ): void {
         if (!this.listEl) {
             return;
@@ -384,12 +405,26 @@ export class TocPanel {
                 itemEl.appendChild(textEl);
 
                 if (item.kind === 'assistant') {
+                    const actionEl = document.createElement('span');
+
+                    actionEl.className = `${APP_ID}-copy-actions`;
+
                     const copyButton = this.createCopyButton(
                         item,
-                        onItemCopy
+                        onItemCopy,
+                        'original'
                     );
 
-                    itemEl.appendChild(copyButton);
+                    const modifyCopyButton = this.createCopyButton(
+                        item,
+                        onItemCopyForModification,
+                        'modify'
+                    );
+
+                    actionEl.appendChild(copyButton);
+                    actionEl.appendChild(modifyCopyButton);
+
+                    itemEl.appendChild(actionEl);
                 }
 
                 if (this.activeId && this.activeId === item.id) {
@@ -420,18 +455,35 @@ export class TocPanel {
      *
      * @param item GPT 回复目录项
      * @param onItemCopy 复制回调
+     * @param mode 复制模式
      */
     private createCopyButton(
         item: TocItem,
-        onItemCopy: (item: TocItem) => Promise<boolean>
+        onItemCopy: (item: TocItem) => Promise<boolean>,
+        mode: 'original' | 'modify'
     ): HTMLButtonElement {
         const button = document.createElement('button');
+        const isModifyMode = mode === 'modify';
 
         button.type = 'button';
         button.className = `${APP_ID}-copy-button`;
-        button.textContent = '⧉';
-        button.title = '复制该次 GPT 回复的全部内容';
-        button.setAttribute('aria-label', '复制 GPT 回复');
+
+        if (isModifyMode) {
+            button.classList.add(`${APP_ID}-copy-modify-button`);
+        }
+
+        button.textContent = isModifyMode ? '改' : '⧉';
+
+        button.title = isModifyMode
+            ? '复制回复，并追加"请按上述内容进行修改。"'
+            : '复制该次 GPT 回复的全部内容';
+
+        button.setAttribute(
+            'aria-label',
+            isModifyMode
+                ? '复制 GPT 回复并追加修改指令'
+                : '复制 GPT 回复'
+        );
 
         button.addEventListener('click', async (event) => {
             event.preventDefault();
@@ -445,9 +497,22 @@ export class TocPanel {
 
             try {
                 const success = await onItemCopy(item);
-                this.showCopyResult(button, success);
+
+                this.showCopyResult(
+                    button,
+                    success,
+                    isModifyMode
+                        ? '已复制并追加修改指令'
+                        : '已复制完整回复'
+                );
             } catch (error) {
-                console.error('[ChatGPT TOC] 复制回复失败。', error);
+                console.error(
+                    isModifyMode
+                        ? '[ChatGPT TOC] 复制并追加修改指令失败。'
+                        : '[ChatGPT TOC] 复制回复失败。',
+                    error
+                );
+
                 this.showCopyResult(button, false);
             }
         });
@@ -460,16 +525,18 @@ export class TocPanel {
      *
      * @param button 复制按钮
      * @param success 是否成功
+     * @param successTitle 成功提示
      */
     private showCopyResult(
         button: HTMLButtonElement,
-        success: boolean
+        success: boolean,
+        successTitle = '已复制完整回复'
     ): void {
         const oldText = button.textContent || '⧉';
         const oldTitle = button.title;
 
         button.textContent = success ? '✓' : '!';
-        button.title = success ? '已复制完整回复' : '复制失败';
+        button.title = success ? successTitle : '复制失败';
         button.classList.toggle(
             `${APP_ID}-copy-success`,
             success
