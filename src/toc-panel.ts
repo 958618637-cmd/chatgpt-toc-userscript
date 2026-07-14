@@ -3,6 +3,8 @@ import {
     APP_ID,
     COLLAPSED_ID,
     DEFAULT_TOC_VISIBLE_LEVEL,
+    DELETE_CURRENT_ID,
+    FOOTER_ID,
     HEADER_ID,
     ITEM_CLASS,
     LEVEL_SELECT_ID,
@@ -22,6 +24,7 @@ export class TocPanel {
     private listEl: HTMLElement | null = null;
     private searchEl: HTMLInputElement | null = null;
     private levelSelectEl: HTMLSelectElement | null = null;
+    private deleteCurrentButtonEl: HTMLButtonElement | null = null;
     private collapsed = false;
     private items: TocItem[] = [];
     private activeId: string | null = null;
@@ -33,13 +36,20 @@ export class TocPanel {
      */
     public mount(
         onItemClick: (item: TocItem) => void,
-        onItemCopy: (item: TocItem) => Promise<boolean>
+        onItemCopy: (item: TocItem) => Promise<boolean>,
+        onDeleteCurrentConversation?: () => Promise<void>
     ): void {
         if (document.getElementById(PANEL_ID)) {
             this.panelEl = document.getElementById(PANEL_ID);
             this.listEl = document.getElementById(LIST_ID);
             this.searchEl = document.getElementById(SEARCH_ID) as HTMLInputElement | null;
             this.levelSelectEl = document.getElementById(LEVEL_SELECT_ID) as HTMLSelectElement | null;
+
+            this.deleteCurrentButtonEl = document.getElementById(
+                DELETE_CURRENT_ID
+            ) as HTMLButtonElement | null;
+
+            this.bindDeleteCurrentButton(onDeleteCurrentConversation);
             return;
         }
 
@@ -61,7 +71,18 @@ export class TocPanel {
                 </div>
             </div>
             <input id="${SEARCH_ID}" type="text" placeholder="搜索目录..." />
+
             <div id="${LIST_ID}"></div>
+
+            <div id="${FOOTER_ID}">
+                <button
+                    id="${DELETE_CURRENT_ID}"
+                    type="button"
+                    title="直接删除当前会话，不再进行插件确认"
+                >
+                    删除当前会话（无确认）
+                </button>
+            </div>
         `;
 
         document.body.appendChild(panel);
@@ -70,6 +91,12 @@ export class TocPanel {
         this.listEl = panel.querySelector(`#${LIST_ID}`);
         this.searchEl = panel.querySelector(`#${SEARCH_ID}`) as HTMLInputElement;
         this.levelSelectEl = panel.querySelector(`#${LEVEL_SELECT_ID}`) as HTMLSelectElement;
+
+        this.deleteCurrentButtonEl = panel.querySelector(
+            `#${DELETE_CURRENT_ID}`
+        ) as HTMLButtonElement;
+
+        this.bindDeleteCurrentButton(onDeleteCurrentConversation);
 
         const toggleButton = panel.querySelector(`#${TOGGLE_ID}`) as HTMLButtonElement;
         toggleButton.addEventListener('click', () => {
@@ -171,6 +198,71 @@ export class TocPanel {
                 document.body.appendChild(collapsedBtn);
             }
         }
+    }
+
+    /**
+     * 绑定删除当前会话按钮。
+     *
+     * @param onDeleteCurrentConversation 删除回调
+     */
+    private bindDeleteCurrentButton(
+        onDeleteCurrentConversation?: () => Promise<void>
+    ): void {
+        const button = this.deleteCurrentButtonEl;
+
+        if (!button || !onDeleteCurrentConversation) {
+            return;
+        }
+
+        /*
+         * 使用 onclick 覆盖旧监听器，
+         * 防止脚本热更新或者重复 mount 后多次执行删除。
+         */
+        button.onclick = async () => {
+            if (button.disabled) {
+                return;
+            }
+
+            const normalText = '删除当前会话（无确认）';
+
+            button.disabled = true;
+            button.textContent = '正在删除...';
+            button.removeAttribute('title');
+
+            try {
+                await onDeleteCurrentConversation();
+
+                button.textContent = '已执行删除';
+
+                window.setTimeout(() => {
+                    if (!button.isConnected) {
+                        return;
+                    }
+
+                    button.textContent = normalText;
+                    button.disabled = false;
+                    button.title = '直接删除当前会话，不再进行插件确认';
+                }, 1200);
+            } catch (error) {
+                const message = error instanceof Error
+                    ? error.message
+                    : String(error || '删除失败');
+
+                console.error('[ChatGPT TOC] 删除当前会话失败：', error);
+
+                button.textContent = '删除失败，点击重试';
+                button.title = message;
+                button.disabled = false;
+
+                window.setTimeout(() => {
+                    if (!button.isConnected || button.disabled) {
+                        return;
+                    }
+
+                    button.textContent = normalText;
+                }, 2500);
+            }
+        };
     }
 
     /**

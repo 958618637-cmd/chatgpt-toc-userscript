@@ -12,6 +12,16 @@ export const HEADER_ID = `${APP_ID}-header`;
 export const LEVEL_SELECT_ID = `${APP_ID}-level-select`;
 
 /**
+ * 目录底部操作区域。
+ */
+export const FOOTER_ID = `${APP_ID}-footer`;
+
+/**
+ * 删除当前会话按钮。
+ */
+export const DELETE_CURRENT_ID = `${APP_ID}-delete-current`;
+
+/**
  * 默认显示目录层级。
  *
  * 2：只显示 用户问题 + GPT回复

@@ -103,6 +103,66 @@ body.dark #${APP_ID}-level-select {
     flex: 1;
 }
 
+#${APP_ID}-footer {
+    flex: 0 0 auto;
+    padding: 10px 12px 12px 12px;
+    border-top: 1px solid #e5e7eb;
+    background: rgba(255, 255, 255, 0.92);
+}
+
+html.dark #${APP_ID}-footer,
+body.dark #${APP_ID}-footer {
+    background: rgba(32, 33, 35, 0.92);
+    border-top-color: #4b5563;
+}
+
+#${APP_ID}-delete-current {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        border-color 0.18s ease,
+        opacity 0.18s ease;
+}
+
+#${APP_ID}-delete-current:hover:not(:disabled) {
+    color: #ffffff;
+    background: #ef4444;
+    border-color: #ef4444;
+}
+
+#${APP_ID}-delete-current:active:not(:disabled) {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+#${APP_ID}-delete-current:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+html.dark #${APP_ID}-delete-current,
+body.dark #${APP_ID}-delete-current {
+    background: transparent;
+    color: #f87171;
+    border-color: #ef4444;
+}
+
+html.dark #${APP_ID}-delete-current:hover:not(:disabled),
+body.dark #${APP_ID}-delete-current:hover:not(:disabled) {
+    color: #ffffff;
+    background: #dc2626;
+}
+
 .${APP_ID}-item {
     padding: 8px 10px;
     margin: 4px 0;
