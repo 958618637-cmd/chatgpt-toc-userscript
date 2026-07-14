@@ -31,7 +31,10 @@ export class TocPanel {
     /**
      * 创建面板。
      */
-    public mount(onItemClick: (item: TocItem) => void): void {
+    public mount(
+        onItemClick: (item: TocItem) => void,
+        onItemCopy: (item: TocItem) => Promise<boolean>
+    ): void {
         if (document.getElementById(PANEL_ID)) {
             this.panelEl = document.getElementById(PANEL_ID);
             this.listEl = document.getElementById(LIST_ID);
@@ -51,7 +54,7 @@ export class TocPanel {
                         层级
                         <select id="${LEVEL_SELECT_ID}">
                             <option value="2"${DEFAULT_TOC_VISIBLE_LEVEL === 2 ? ' selected' : ''}>2级</option>
-                            <option value="3"${DEFAULT_TOC_VISIBLE_LEVEL === 3 ? ' selected' : ''}>3级</option>
+                            <option value="3"${DEFAULT_TOC_VISIBLE_LEVEL === (3 as 2 | 3) ? ' selected' : ''}>3级</option>
                         </select>
                     </label>
                     <button id="${TOGGLE_ID}" title="折叠">◀</button>
@@ -74,14 +77,14 @@ export class TocPanel {
         });
 
         this.searchEl.addEventListener('input', () => {
-            this.renderList(this.getFilteredItems(), onItemClick);
+            this.renderList(this.getFilteredItems(), onItemClick, onItemCopy);
         });
 
         this.levelSelectEl.addEventListener('change', () => {
             const value = Number(this.levelSelectEl?.value || DEFAULT_TOC_VISIBLE_LEVEL);
             this.maxVisibleLevel = value === 3 ? 3 : 2;
 
-            this.renderList(this.getFilteredItems(), onItemClick);
+            this.renderList(this.getFilteredItems(), onItemClick, onItemCopy);
 
             if (this.activeId) {
                 this.setActive(this.activeId, this.activeParentId);
@@ -95,9 +98,13 @@ export class TocPanel {
      * @param items 目录项
      * @param onItemClick 点击事件
      */
-    public update(items: TocItem[], onItemClick: (item: TocItem) => void): void {
+    public update(
+        items: TocItem[],
+        onItemClick: (item: TocItem) => void,
+        onItemCopy: (item: TocItem) => Promise<boolean>
+    ): void {
         this.items = items;
-        this.renderList(this.getFilteredItems(), onItemClick);
+        this.renderList(this.getFilteredItems(), onItemClick, onItemCopy);
 
         if (this.activeId) {
             this.setActive(this.activeId, this.activeParentId);
@@ -249,9 +256,14 @@ export class TocPanel {
      * 渲染目录列表。
      *
      * @param items 目录项
-     * @param onItemClick 点击事件
+     * @param onItemClick 点击目录项
+     * @param onItemCopy 复制 GPT 回复
      */
-    private renderList(items: TocItem[], onItemClick: (item: TocItem) => void): void {
+    private renderList(
+        items: TocItem[],
+        onItemClick: (item: TocItem) => void,
+        onItemCopy: (item: TocItem) => Promise<boolean>
+    ): void {
         if (!this.listEl) {
             return;
         }
@@ -261,16 +273,32 @@ export class TocPanel {
         const renderItems = (itemList: TocItem[], level: number): void => {
             itemList.forEach((item) => {
                 const itemEl = document.createElement('div');
+
                 itemEl.className = ITEM_CLASS;
                 itemEl.dataset.id = item.id;
                 itemEl.dataset.role = item.role;
                 itemEl.dataset.level = String(level);
                 itemEl.dataset.parentId = item.parentId || '';
                 itemEl.dataset.kind = item.kind;
-
-                itemEl.textContent = `${buildItemPrefix(item, level)}${item.title}`;
-                itemEl.title = item.title;
                 itemEl.style.paddingLeft = `${10 + (level * 18)}px`;
+
+                const textEl = document.createElement('span');
+
+                textEl.className = `${APP_ID}-item-text`;
+                textEl.textContent =
+                    `${buildItemPrefix(item, level)}${item.title}`;
+                textEl.title = item.title;
+
+                itemEl.appendChild(textEl);
+
+                if (item.kind === 'assistant') {
+                    const copyButton = this.createCopyButton(
+                        item,
+                        onItemCopy
+                    );
+
+                    itemEl.appendChild(copyButton);
+                }
 
                 if (this.activeId && this.activeId === item.id) {
                     itemEl.classList.add(ACTIVE_CLASS);
@@ -293,6 +321,82 @@ export class TocPanel {
         };
 
         renderItems(items, 0);
+    }
+
+    /**
+     * 创建 GPT 回复复制按钮。
+     *
+     * @param item GPT 回复目录项
+     * @param onItemCopy 复制回调
+     */
+    private createCopyButton(
+        item: TocItem,
+        onItemCopy: (item: TocItem) => Promise<boolean>
+    ): HTMLButtonElement {
+        const button = document.createElement('button');
+
+        button.type = 'button';
+        button.className = `${APP_ID}-copy-button`;
+        button.textContent = '⧉';
+        button.title = '复制该次 GPT 回复的全部内容';
+        button.setAttribute('aria-label', '复制 GPT 回复');
+
+        button.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (button.disabled) {
+                return;
+            }
+
+            button.disabled = true;
+
+            try {
+                const success = await onItemCopy(item);
+                this.showCopyResult(button, success);
+            } catch (error) {
+                console.error('[ChatGPT TOC] 复制回复失败。', error);
+                this.showCopyResult(button, false);
+            }
+        });
+
+        return button;
+    }
+
+    /**
+     * 显示复制结果。
+     *
+     * @param button 复制按钮
+     * @param success 是否成功
+     */
+    private showCopyResult(
+        button: HTMLButtonElement,
+        success: boolean
+    ): void {
+        const oldText = button.textContent || '⧉';
+        const oldTitle = button.title;
+
+        button.textContent = success ? '✓' : '!';
+        button.title = success ? '已复制完整回复' : '复制失败';
+        button.classList.toggle(
+            `${APP_ID}-copy-success`,
+            success
+        );
+        button.classList.toggle(
+            `${APP_ID}-copy-failed`,
+            !success
+        );
+
+        window.setTimeout(() => {
+            button.textContent = oldText;
+            button.title = oldTitle;
+            button.disabled = false;
+
+            button.classList.remove(
+                `${APP_ID}-copy-success`,
+                `${APP_ID}-copy-failed`
+            );
+        }, 1500);
     }
 }
 

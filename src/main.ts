@@ -1,6 +1,7 @@
 import { extractTocItems } from './conversation';
 import { getConversationMessageElements } from './chatgpt-dom';
 import { PageObserver } from './observer';
+import { ReplyCopyManager } from './reply-copy-manager';
 import { ReplyNotifier } from './reply-notifier';
 import { ScrollManager } from './scroll-manager';
 import { injectStyles } from './style';
@@ -17,6 +18,7 @@ class ChatGptTocApp {
     private scrollManager = new ScrollManager();
     private pageObserver = new PageObserver();
     private replyNotifier = new ReplyNotifier();
+    private replyCopyManager = new ReplyCopyManager();
     private items: TocItem[] = [];
     private lastItemsSignature = '';
     private ignoreScrollSyncUntil = 0;
@@ -26,7 +28,10 @@ class ChatGptTocApp {
      */
     public start(): void {
         injectStyles();
-        this.tocPanel.mount((item) => this.handleItemClick(item));
+        this.tocPanel.mount(
+            (item) => this.handleItemClick(item),
+            (item) => this.handleItemCopy(item)
+        );
 
         this.rebuild();
 
@@ -65,7 +70,11 @@ class ChatGptTocApp {
 
         if (nextSignature !== this.lastItemsSignature) {
             this.lastItemsSignature = nextSignature;
-            this.tocPanel.update(this.items, (item) => this.handleItemClick(item));
+            this.tocPanel.update(
+                this.items,
+                (item) => this.handleItemClick(item),
+                (item) => this.handleItemCopy(item)
+            );
         }
 
         if (Date.now() >= this.ignoreScrollSyncUntil) {
@@ -82,6 +91,16 @@ class ChatGptTocApp {
         this.ignoreScrollSyncUntil = Date.now() + SCROLL_SYNC_LOCK_MS;
         this.tocPanel.setActive(item.id, item.parentId || null);
         this.scrollManager.scrollToItem(item);
+    }
+
+    /**
+     * 复制目录项对应的 GPT 回复。
+     *
+     * @param item 目录项
+     * @returns 是否复制成功
+     */
+    private async handleItemCopy(item: TocItem): Promise<boolean> {
+        return this.replyCopyManager.copy(item);
     }
 
     /**

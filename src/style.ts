@@ -112,6 +112,10 @@ body.dark #${APP_ID}-level-select {
     font-size: 13px;
     word-break: break-word;
     transition: background 0.2s ease;
+
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
 }
 
 .${APP_ID}-item:hover {
@@ -126,6 +130,70 @@ body.dark #${APP_ID}-level-select {
 .${APP_ID}-item.${APP_ID}-parent-active {
     background: rgba(59, 130, 246, 0.10);
     font-weight: 600;
+}
+
+.${APP_ID}-item-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.${APP_ID}-copy-button {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-top: -2px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #606266;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 24px;
+    text-align: center;
+    opacity: 0.35;
+    transition:
+        opacity 0.2s ease,
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.${APP_ID}-item:hover .${APP_ID}-copy-button,
+.${APP_ID}-copy-button:hover,
+.${APP_ID}-copy-button:focus {
+    opacity: 1;
+}
+
+.${APP_ID}-copy-button:hover {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+}
+
+.${APP_ID}-copy-button:disabled {
+    cursor: default;
+}
+
+.${APP_ID}-copy-button.${APP_ID}-copy-success {
+    opacity: 1;
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.12);
+}
+
+.${APP_ID}-copy-button.${APP_ID}-copy-failed {
+    opacity: 1;
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.12);
+}
+
+html.dark .${APP_ID}-copy-button,
+body.dark .${APP_ID}-copy-button {
+    color: #d1d5db;
+}
+
+html.dark .${APP_ID}-copy-button:hover,
+body.dark .${APP_ID}-copy-button:hover {
+    color: #93c5fd;
+    background: rgba(96, 165, 250, 0.16);
 }
 
 #${APP_ID}-toggle {
